@@ -1,5 +1,5 @@
 {
-  "name": "The LifeLine",
+  "name": "LifeLine",
   "description": "LifeLine is a next-generation Neural Diagnostic Engine. It leverages the reasoning capabilities of DeepSeek and the multimodal power of Gemini to provide predictive disease analysis, medical report scanning, and proactive health monitoring in a clinical-grade ecosystem.",
   "requestFramePermissions": [
     "camera",

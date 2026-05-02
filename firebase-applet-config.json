@@ -1,10 +1,10 @@
 {
-  "projectId": "llm-security-shield",
-  "appId": "1:522018063165:web:d6c0024965f78d8e9afb54",
-  "apiKey": "AIzaSyBKgDcxCAfsCQ1_LUWJwW1-11pXh1H611s",
-  "authDomain": "llm-security-shield.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-7fca842c-8bb4-43d2-909b-2f22deb2d509",
-  "storageBucket": "llm-security-shield.firebasestorage.app",
-  "messagingSenderId": "522018063165",
+  "projectId": "gen-lang-client-0771710951",
+  "appId": "1:231282195436:web:deed5e660b8e373bda9ec9",
+  "apiKey": "AIzaSyDi2kKc_ZpkxJweyizSwNC2gTxITFGDTzo",
+  "authDomain": "gen-lang-client-0771710951.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-a50972bb-f3af-431b-9878-a452c82bade9",
+  "storageBucket": "gen-lang-client-0771710951.firebasestorage.app",
+  "messagingSenderId": "231282195436",
   "measurementId": ""
 }

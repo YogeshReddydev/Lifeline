@@ -327,10 +327,10 @@ export default function Dashboard() {
                       className="bg-white p-6 rounded-[32px] border border-accent flex items-center gap-5 hover:border-primary/50 transition-all cursor-pointer group shadow-sm active:scale-95"
                     >
                        <div className="w-14 h-14 rounded-2xl bg-natural-bg border border-accent flex items-center justify-center text-primary text-lg font-black shadow-inner">
-                          {doc.name?.charAt(0)}
+                          {doc.fullName?.charAt(0)}
                        </div>
                        <div>
-                          <h4 className="text-sm font-black text-natural-text uppercase tracking-widest">{doc.name}</h4>
+                          <h4 className="text-sm font-black text-natural-text uppercase tracking-widest">{doc.fullName}</h4>
                           <p className="text-[10px] text-muted font-bold mt-1">{doc.specialization} • {doc.hospital}</p>
                           <div className="flex items-center gap-1 mt-2">
                              <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />

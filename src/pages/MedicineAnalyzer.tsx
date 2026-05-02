@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { handleFirestoreError, OperationType } from '../lib/firestore-utils';
 import { getStructuredHealthData, AIProvider } from '../lib/aiService';
 import { Pill, Info, ArrowLeft, Search, Loader2, AlertCircle, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -51,16 +50,12 @@ export default function MedicineAnalyzer() {
       setResult(data);
 
       if (user) {
-        try {
-          await addDoc(collection(db, 'medicineAnalyses'), {
-            userId: user.uid,
-            medicineName: data.medicineName,
-            analysis: data,
-            timestamp: serverTimestamp()
-          });
-        } catch (dbErr) {
-          handleFirestoreError(dbErr, OperationType.WRITE, 'medicineAnalyses');
-        }
+        await addDoc(collection(db, 'medicineAnalyses'), {
+          userId: user.uid,
+          medicineName: data.medicineName,
+          analysis: data,
+          timestamp: serverTimestamp()
+        });
       }
     } catch (err: any) {
       console.error(err);

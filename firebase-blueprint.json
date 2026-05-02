@@ -6,7 +6,7 @@
       "type": "object",
       "properties": {
         "email": { "type": "string", "format": "email" },
-        "name": { "type": "string" },
+        "fullName": { "type": "string" },
         "role": { "type": "string", "enum": ["patient", "doctor", "admin", "guardian"] },
         "createdAt": { "type": "string", "format": "date-time" },
         "specialization": { "type": "string" },
@@ -18,7 +18,7 @@
         "readyForTreatment": { "type": "boolean" },
         "lastCheckupCondition": { "type": "string" }
       },
-      "required": ["email", "name", "role", "createdAt"]
+      "required": ["email", "fullName", "role", "createdAt"]
     },
     "consultations": {
       "title": "Consultation",
@@ -67,18 +67,6 @@
         "data": { "type": "object" }
       },
       "required": ["userId", "timestamp"]
-    },
-    "medicineAnalyses": {
-      "title": "Medicine Analysis",
-      "description": "Records of AI-analyzed medicines.",
-      "type": "object",
-      "properties": {
-        "userId": { "type": "string" },
-        "medicineName": { "type": "string" },
-        "analysis": { "type": "object" },
-        "timestamp": { "type": "string", "format": "date-time" }
-      },
-      "required": ["userId", "medicineName", "timestamp"]
     }
   },
   "firestore": {
@@ -97,10 +85,6 @@
     "healthReports/{reportId}": {
       "schema": "healthReports",
       "description": "Generated health reports"
-    },
-    "medicineAnalyses/{analysisId}": {
-      "schema": "medicineAnalyses",
-      "description": "Medicine analysis results"
     },
     "consultations/{consultationId}": {
       "schema": "consultations",
