@@ -13,6 +13,7 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { getHealthInsights, getStructuredHealthData, AIProvider } from '../lib/aiService';
+import { formatGeminiError } from '../lib/gemini';
 import { useLanguage } from '../lib/LanguageContext';
 import { db, auth } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -79,7 +80,7 @@ export default function Assistant() {
       }
     } catch (err) {
       console.error(err);
-      setMessages(prev => [...prev, { role: 'assistant', content: "Error communicating with AI. Please check your connection.", timestamp: new Date() }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: `Error communicating with AI: ${formatGeminiError(err)}`, timestamp: new Date() }]);
     } finally {
       setLoading(false);
     }

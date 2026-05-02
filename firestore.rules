@@ -43,7 +43,7 @@ service cloud.firestore {
     function isValidAnalysis(data) {
       return data.keys().hasAll(['userId', 'timestamp']) &&
              data.userId == request.auth.uid &&
-             data.timestamp is string;
+             (data.timestamp is string || data.timestamp is timestamp);
     }
 
     function isValidConsultation(data) {
@@ -82,19 +82,19 @@ service cloud.firestore {
 
     match /symptomsAnalyses/{id} {
       allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if (isVerified() || isAdmin()) && isValidAnalysis(incoming()) && incoming().userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidAnalysis(incoming()) && incoming().userId == request.auth.uid;
       allow delete: if isAdmin();
     }
 
     match /skinAnalyses/{id} {
       allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if (isVerified() || isAdmin()) && isValidAnalysis(incoming()) && incoming().userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidAnalysis(incoming()) && incoming().userId == request.auth.uid;
       allow delete: if isAdmin();
     }
 
     match /healthReports/{id} {
       allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if (isVerified() || isAdmin()) && isValidAnalysis(incoming()) && incoming().userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidAnalysis(incoming()) && incoming().userId == request.auth.uid;
       allow delete: if isAdmin();
     }
 

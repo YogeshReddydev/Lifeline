@@ -12,6 +12,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { getStructuredHealthData } from '../lib/aiService';
+import { formatGeminiError } from '../lib/gemini';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
@@ -104,7 +105,7 @@ export default function AITriage() {
       }
     } catch (err: any) {
       console.error('Triage Error:', err);
-      setError('Neural processing failed. Please try again or seek professional help if symptoms are severe.');
+      setError(`Neural processing failed: ${formatGeminiError(err)}`);
     } finally {
       setLoading(false);
     }

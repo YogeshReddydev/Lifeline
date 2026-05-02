@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { getStructuredHealthData, AIProvider } from '../lib/aiService';
+import { formatGeminiError } from '../lib/gemini';
 import { Pill, Info, ArrowLeft, Search, Loader2, AlertCircle, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -59,7 +60,7 @@ export default function MedicineAnalyzer() {
       }
     } catch (err: any) {
       console.error(err);
-      setError("Failed to analyze medicine. Please check the name and try again.");
+      setError(`Failed to analyze medicine: ${formatGeminiError(err)}`);
     } finally {
       setLoading(false);
     }

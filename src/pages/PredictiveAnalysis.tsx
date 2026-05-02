@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import Logo from '../components/Logo';
 import { getStructuredHealthData, AIProvider } from '../lib/aiService';
+import { formatGeminiError } from '../lib/gemini';
 import { db, auth } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from '../lib/firestore-utils';
@@ -157,17 +158,18 @@ export default function PredictiveAnalysis() {
 
     try {
       // Step 1: Generate Deep-Level Follow-up Questions (Reasoning Phase)
-      setLoadingMessage('Reasoning with available models for critical insights...');
+      setLoadingMessage('Gemini-Flash calculating clinical reasoning nodes...');
       
       const questioningPrompt = `As a clinical diagnostic reasoning engine, analyze this patient summary: ${baseData}.
       Identify potential missing critical information or clarifying details needed for a precise diagnosis.
-      Generate exactly 3 deep-dive follow-up questions that would help rule out or confirm severe underlying conditions.
-      Output ONLY a JSON array of strings. Example: ["Does the chest pain radiate to the left arm?", "..."]`;
+      Generate exactly 3 deep-dive follow-up questions.
+      Output ONLY a JSON array of strings.`;
 
+      // Always use Gemini for the questioning/reasoning phase as it is much faster and highly capable for this task
       const qResponse = await getStructuredHealthData(
         questioningPrompt,
         { type: "array", items: { type: "string" } },
-        provider
+        AIProvider.GEMINI
       );
 
       setFollowUpQuestions(qResponse);
@@ -175,6 +177,7 @@ export default function PredictiveAnalysis() {
       setLoading(false);
     } catch (err) {
       console.warn('Reasoning phase skipped or failed:', err);
+      // Even if reasoning fails, we attempt the final inference
       await runFinalInference(baseData, {});
     }
   };
@@ -257,7 +260,7 @@ export default function PredictiveAnalysis() {
       }
     } catch (err: any) {
       console.error(err);
-      setError(`Neural analysis synthesis failed: ${err.message || 'System timeout or invalid biometric alignment.'}`);
+      setError(`Neural analysis synthesis failed: ${formatGeminiError(err)}`);
     } finally {
       setLoading(false);
     }

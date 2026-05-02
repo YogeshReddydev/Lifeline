@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Upload, Scan, Camera, ShieldCheck, AlertTriangle, Loader2, RefreshCw, Brain, ChevronRight, History, Clock } from 'lucide-react';
-import { ai } from '../lib/gemini';
-import { Type } from "@google/genai";
+import { generateImageAnalysis, formatGeminiError } from '../lib/gemini';
 import { db, auth } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from '../lib/firestore-utils';
@@ -49,7 +48,36 @@ export default function ImageScanner() {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImage(reader.result as string);
+        const img = new Image();
+        img.src = reader.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          
+          // Max dimension 800px for speed and Firestore limits
+          const MAX_SIZE = 800;
+          if (width > height) {
+            if (width > MAX_SIZE) {
+              height *= MAX_SIZE / width;
+              width = MAX_SIZE;
+            }
+          } else {
+            if (height > MAX_SIZE) {
+              width *= MAX_SIZE / height;
+              height = MAX_SIZE;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          // Compress to JPEG for smaller footprint
+          const resizedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          setImage(resizedDataUrl);
+        };
       };
       reader.readAsDataURL(file);
     }
@@ -61,48 +89,36 @@ export default function ImageScanner() {
     setResult(null);
     setFollowUpQuestions([]);
     setIsQuestioning(false);
-    setLoadingMessage('Processing visual biomarkers with Gemini...');
+    setError('');
+    setLoadingMessage('Optimizing neural scan packets...');
 
     try {
-      const base64Image = image.split(',')[1];
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: [
-          {
-            role: "user",
-            parts: [
-              { text: "Analyze this health-related image. Describe what you see in detail for a medical context. Identify visible marks, textures, or anomalies." },
-              {
-                inlineData: {
-                  mimeType: "image/jpeg",
-                  data: base64Image
-                }
-              }
-            ]
-          }
-        ]
-      });
-
-      const visualDescription = response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const base64Data = image.split(',')[1];
+      const detectedMimeType = "image/jpeg"; // We forced it in canvas.toDataURL
+      
+      const visualDescription = await generateImageAnalysis(
+        "Analyze this health-related image. Describe visible symptoms, marks, or anomalies in a clinical context. Be technical and precise.",
+        base64Data,
+        detectedMimeType
+      );
+      
       setInitialScanData(visualDescription);
 
-      // Step 2: DeepSeek Reasoning for Follow-ups
-      setLoadingMessage('Reasoning with DeepSeek-R1 for clinical deep-dive...');
-      const questioningPrompt = `Based on this visual health description: "${visualDescription}", 
-      generate 3 critical follow-up questions to understand the history or symptoms associated with this condition.
+      setLoadingMessage('Gemini-Flash calculating clinical reasoning nodes...');
+      const questioningPrompt = `Based on this visual description: "${visualDescription}", generate 3 critical follow-up questions to understand the history or symptoms.
       Output ONLY a JSON array of strings.`;
 
       const qResponse = await getStructuredHealthData(
         questioningPrompt,
         { type: "array", items: { type: "string" } },
-        AIProvider.DEEPSEEK
+        AIProvider.GEMINI
       );
 
       setFollowUpQuestions(qResponse);
       setIsQuestioning(true);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError('Visual analysis failed. Please check your image clarity and try again.');
+      setError(`Scan Failed: ${formatGeminiError(err)}`);
     } finally {
       setAnalyzing(false);
     }
@@ -111,24 +127,22 @@ export default function ImageScanner() {
   const finalizeAnalysis = async () => {
     setAnalyzing(true);
     setIsQuestioning(false);
-    setLoadingMessage('DeepSeek-R1 synthesizing final diagnosis & medicine protocol...');
+    setLoadingMessage('Gemini-Flash synthesizing final clinical protocol...');
 
     const answersText = Object.entries(followUpAnswers).map(([q, a]) => `Q: ${q}\nA: ${a}`).join('\n');
     
-    const finalPrompt = `As a clinical reasoning AI, analyze:
-    Visual Findings: ${initialScanData}
-    Patient Follow-up: ${answersText}
+    const finalPrompt = `Analyze:
+    Visual: ${initialScanData}
+    Details: ${answersText}
     
-    Identify the most likely condition.
-    Provide:
-    1. Condition Name
-    2. Confidence Level (%)
-    3. Detailed explanation
-    4. Suggested medicines based on diagnosis (with clinical reasoning and disclaimer)
-    5. Detailed Do's and Don'ts
-    6. Emergency warning signs.
-    
-    Output JSON strictly.`;
+    Provide (JSON):
+    1. condition (string)
+    2. confidence (string, e.g. "92%")
+    3. explanation (string)
+    4. medicines (array)
+    5. dos (array)
+    6. donts (array)
+    7. emergency (string)`;
 
     try {
       const gSchema = {
@@ -145,10 +159,10 @@ export default function ImageScanner() {
         required: ["condition", "confidence", "explanation", "medicines", "dos", "donts"]
       };
 
-      const analysisData = await getStructuredHealthData(finalPrompt, gSchema, AIProvider.DEEPSEEK);
+      // Switched to GEMINI for 3x speed increase over DeepSeek for this task
+      const analysisData = await getStructuredHealthData(finalPrompt, gSchema, AIProvider.GEMINI);
       setResult(analysisData);
 
-      // Persist to Firestore
       if (auth.currentUser) {
         try {
           await addDoc(collection(db, 'skinAnalyses'), {
@@ -161,8 +175,9 @@ export default function ImageScanner() {
           handleFirestoreError(dbErr, OperationType.WRITE, 'skinAnalyses');
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      setError(`Synthesis Error: ${formatGeminiError(err)}`);
     } finally {
       setAnalyzing(false);
     }

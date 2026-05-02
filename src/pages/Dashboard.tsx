@@ -47,20 +47,17 @@ export default function Dashboard() {
         const uid = auth.currentUser.uid;
         setIsReadyForTreatment(!!profile?.readyForTreatment);
         
-        // Fetch Available Doctors
-        const doctorSnap = await getDocs(query(collection(db, 'users'), where('role', '==', 'doctor'), where('isAvailable', '==', true), limit(3)));
+        // Fetch everything in parallel for speed
+        const [doctorSnap, sympSnap, skinSnap, repSnap] = await Promise.all([
+          getDocs(query(collection(db, 'users'), where('role', '==', 'doctor'), where('isAvailable', '==', true), limit(3))),
+          getDocs(query(collection(db, 'symptomsAnalyses'), where('userId', '==', uid), orderBy('timestamp', 'desc'), limit(10))),
+          getDocs(query(collection(db, 'skinAnalyses'), where('userId', '==', uid), orderBy('timestamp', 'desc'), limit(10))),
+          getDocs(query(collection(db, 'healthReports'), where('userId', '==', uid), orderBy('timestamp', 'desc'), limit(10)))
+        ]);
+
         setAvailableDoctors(doctorSnap.docs.map(d => ({ ...d.data(), id: d.id })));
-
-        // Fetch Symptom Analyses
-        const sympSnap = await getDocs(query(collection(db, 'symptomsAnalyses'), where('userId', '==', uid), orderBy('timestamp', 'desc')));
         const sympData = sympSnap.docs.map(d => ({ ...d.data(), id: d.id, type: 'symptom' }));
-
-        // Fetch Skin Analyses
-        const skinSnap = await getDocs(query(collection(db, 'skinAnalyses'), where('userId', '==', uid), orderBy('timestamp', 'desc')));
         const skinData = skinSnap.docs.map(d => ({ ...d.data(), id: d.id, type: 'skin' }));
-
-        // Fetch Reports
-        const repSnap = await getDocs(query(collection(db, 'healthReports'), where('userId', '==', uid), orderBy('timestamp', 'desc')));
         const repData = repSnap.docs.map(d => ({ ...d.data(), id: d.id, type: 'report' }));
 
         const allEvents = [...sympData, ...skinData, ...repData].sort((a: any, b: any) => {
@@ -401,8 +398,9 @@ export default function Dashboard() {
                     </div>
                  )}
               </div>
-              <div className="p-8 bg-natural-bg/50 border-t border-accent text-center">
-                 <p className="text-[10px] font-black text-muted uppercase tracking-widest">Security Protocol: End-to-End Encrypted Records</p>
+              <div className="p-8 bg-natural-bg/50 border-t border-accent text-center space-y-2">
+                 <p className="text-[10px] font-black text-muted uppercase tracking-widest leading-none">Security Protocol: End-to-End Encrypted Records</p>
+                 <p className="text-[9px] font-bold text-muted/60 uppercase tracking-widest leading-none">Project ID: gen-lang-client-0771710951</p>
               </div>
            </section>
         </div>
