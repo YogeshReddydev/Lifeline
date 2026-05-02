@@ -14,6 +14,7 @@ export const translations: Translations = {
   predictive: { en: 'Predictive Engine', te: 'ప్రిడిక్టివ్ ఇంజిన్', hi: 'भविष्यवाणी इंजन' },
   assistant: { en: 'Health Chat', te: 'ఆరోగ్య చాట్', hi: 'स्वास्थ्य चैट' },
   reports: { en: 'Medical Reports', te: 'వైద్య నివేదికలు', hi: 'चिकित्सा रिपोर्ट' },
+  ai_triage: { en: 'AI Triage', te: 'AI ట్రయల్', hi: 'AI ट्राइएज' },
   settings: { en: 'Settings', te: 'సెట్టింగులు', hi: 'सेटिंग्स' },
   
   // Dashboard

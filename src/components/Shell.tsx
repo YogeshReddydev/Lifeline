@@ -4,6 +4,7 @@ import {
   LayoutDashboard, 
   Activity, 
   ScanSearch,
+  Stethoscope,
   FileText, 
   MessageSquare, 
   Bell, 
@@ -76,6 +77,7 @@ export default function Shell({ children }: ShellProps) {
   ] : [
     { name: t('dashboard'), path: '/dashboard', icon: LayoutDashboard },
     { name: t('predictive'), path: '/prediction', icon: Activity },
+    { name: t('ai_triage'), path: '/triage', icon: Stethoscope },
     { name: t('image_scan'), path: '/image-scan', icon: ScanSearch },
     { name: t('assistant'), path: '/assistant', icon: MessageSquare },
     { name: t('reports'), path: '/reports', icon: FileText },

@@ -1,15 +1,22 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { 
+  signInWithEmailAndPassword, 
+  GoogleAuthProvider, 
+  signInWithPopup,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence 
+} from 'firebase/auth';
 import { auth, db } from '../lib/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { handleFirestoreError, OperationType } from '../lib/firestore-utils';
+import { doc, getDoc } from 'firebase/firestore';
 import { Lock, Mail, Loader2, ArrowRight } from 'lucide-react';
 import Logo from '../components/Logo';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -19,6 +26,8 @@ export default function Login() {
     setError('');
     const provider = new GoogleAuthProvider();
     try {
+      // For Google Login, we also respect the persistence setting
+      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
       
@@ -52,6 +61,8 @@ export default function Login() {
     setLoading(true);
     setError('');
     try {
+      // Set persistence based on choice
+      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
       await signInWithEmailAndPassword(auth, email, password);
       navigate('/dashboard');
     } catch (err: any) {
@@ -96,6 +107,7 @@ export default function Login() {
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" size={18} />
               <input
+                id="email-input"
                 type="email"
                 required
                 className="w-full pl-12 pr-4 py-4 bg-natural-bg border border-accent rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-medium"
@@ -114,6 +126,7 @@ export default function Login() {
             <div className="relative">
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" size={18} />
               <input
+                id="password-input"
                 type="password"
                 required
                 className="w-full pl-12 pr-4 py-4 bg-natural-bg border border-accent rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-medium"
@@ -124,7 +137,21 @@ export default function Login() {
             </div>
           </div>
 
+          <div className="flex items-center justify-between px-1">
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <input
+                id="remember-me-checkbox"
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 rounded border-accent text-primary focus:ring-offset-0 focus:ring-primary transition-all cursor-pointer"
+              />
+              <span className="text-[10px] font-black text-muted uppercase tracking-widest group-hover:text-primary transition-colors">Remember Me</span>
+            </label>
+          </div>
+
           <button
+            id="login-button"
             type="submit"
             disabled={loading}
             className="w-full py-5 bg-primary text-white rounded-2xl font-black uppercase tracking-[0.2em] hover:opacity-90 transition-all flex items-center justify-center gap-2 group disabled:opacity-70 shadow-lg shadow-primary/20"
@@ -149,6 +176,7 @@ export default function Login() {
           </div>
 
           <button
+            id="google-login-button"
             type="button"
             onClick={handleGoogleLogin}
             disabled={loading}

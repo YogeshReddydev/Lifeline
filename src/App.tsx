@@ -17,6 +17,7 @@ import PredictiveAnalysis from './pages/PredictiveAnalysis';
 import ImageScanner from './pages/ImageScanner';
 import Reports from './pages/Reports';
 import Assistant from './pages/Assistant';
+import AITriage from './pages/AITriage';
 import DoctorDashboard from './pages/DoctorDashboard';
 import Pricing from './pages/Pricing';
 
@@ -60,6 +61,7 @@ function AppRoutes() {
       <Route path="/doctor-dashboard" element={<ProtectedRoute roles={['doctor']}><DoctorDashboard /></ProtectedRoute>} />
       <Route path="/prediction" element={<ProtectedRoute><PredictiveAnalysis /></ProtectedRoute>} />
       <Route path="/image-scan" element={<ProtectedRoute><ImageScanner /></ProtectedRoute>} />
+      <Route path="/triage" element={<ProtectedRoute><AITriage /></ProtectedRoute>} />
       <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
       <Route path="/assistant" element={<ProtectedRoute><Assistant /></ProtectedRoute>} />
       

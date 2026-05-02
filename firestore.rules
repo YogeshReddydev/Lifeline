@@ -1,72 +1,110 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper functions
-    function isSignedIn() {
-      return request.auth != null;
-    }
-    
-    function isEmailVerified() {
-      return request.auth.token.email_verified == true;
-    }
-
-    function isAdmin() {
-      return isSignedIn() && request.auth.token.email == 'yampaatiyogeshpavan@gmail.com';
-    }
-
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
-    }
-
-    function isDoctor() {
-      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'doctor';
-    }
-
-    // Default deny
+    // Default deny catch-all
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // User profiles
+    // System heartbeat for connection testing
+    match /system/heartbeat {
+      allow read: if true;
+    }
+
+    // --- PHASE 3: Primitives & Helpers ---
+    function isSignedIn() { return request.auth != null; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function isAdmin() { return isSignedIn() && request.auth.token.email == 'yampaatiyogeshpavan@gmail.com' && request.auth.token.email_verified == true; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    
+    // Role checks
+    function isDoctor() { 
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'doctor'; 
+    }
+
+    // --- Validation Blueprints ---
+    
+    function isValidUser(data) {
+      return data.keys().hasAll(['email', 'name', 'role', 'createdAt']) &&
+             data.email is string && data.email.size() <= 128 &&
+             data.name is string && data.name.size() <= 128 &&
+             data.role in ['patient', 'doctor', 'admin', 'guardian'] &&
+             data.createdAt is string &&
+             (data.role != 'doctor' || (
+               data.specialization is string && data.specialization.size() <= 128 &&
+               data.qualification is string && data.qualification.size() <= 128 &&
+               data.hospital is string && data.hospital.size() <= 128
+             ));
+    }
+
+    function isValidAnalysis(data) {
+      return data.keys().hasAll(['userId', 'timestamp']) &&
+             data.userId == request.auth.uid &&
+             data.timestamp is string;
+    }
+
+    function isValidConsultation(data) {
+      return data.keys().hasAll(['patientId', 'doctorId', 'status', 'timestamp']) &&
+             data.patientId is string && data.doctorId is string &&
+             data.status in ['requested', 'active', 'completed'] &&
+             data.timestamp is string;
+    }
+
+    // --- Collection Rules ---
+
     match /users/{userId} {
-      // Patients can read doctors, doctors can read patients ready for treatment
       allow read: if isSignedIn() && (
         isOwner(userId) || 
         isAdmin() || 
         (resource.data.role == 'doctor' && resource.data.isAvailable == true) ||
         (isDoctor() && resource.data.readyForTreatment == true)
       );
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isOwner(userId) && (
-        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'email'])
+      
+      allow create: if (isVerified() || isAdmin()) && isOwner(userId) && isValidUser(incoming());
+      
+      allow update: if (isVerified() || isAdmin()) && isOwner(userId) && isValidUser(incoming()) && (
+        // Prevent privilege escalation: User cannot change their own role once set, unless admin
+        (incoming().role == existing().role || isAdmin()) &&
+        // Prevent changing immutable identity fields
+        incoming().email == existing().email &&
+        incoming().createdAt == existing().createdAt &&
+        // Named Actions
+        (
+          // Action: Profile Update
+          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'specialization', 'qualification', 'hospital', 'isAvailable', 'readyForTreatment', 'lastCheckupCondition', 'guardianCode', 'linkedPatients', 'linkedGuardians']) ||
+          isAdmin()
+        )
       );
     }
 
-    // Consultations
-    match /consultations/{id} {
-      allow read: if isSignedIn() && (resource.data.patientId == request.auth.uid || resource.data.doctorId == request.auth.uid || isAdmin());
-      allow create: if isSignedIn() && request.resource.data.patientId == request.auth.uid;
-      allow update: if isSignedIn() && (resource.data.doctorId == request.auth.uid || isAdmin());
-    }
-
-    // Analyses and Reports
     match /symptomsAnalyses/{id} {
       allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow create: if (isVerified() || isAdmin()) && isValidAnalysis(incoming()) && incoming().userId == request.auth.uid;
+      allow delete: if isAdmin();
     }
 
     match /skinAnalyses/{id} {
       allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow create: if (isVerified() || isAdmin()) && isValidAnalysis(incoming()) && incoming().userId == request.auth.uid;
+      allow delete: if isAdmin();
     }
 
     match /healthReports/{id} {
       allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow create: if (isVerified() || isAdmin()) && isValidAnalysis(incoming()) && incoming().userId == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
+    match /consultations/{id} {
+      allow read: if isSignedIn() && (resource.data.patientId == request.auth.uid || resource.data.doctorId == request.auth.uid || isAdmin());
+      allow create: if (isVerified() || isAdmin()) && isValidConsultation(incoming()) && incoming().patientId == request.auth.uid;
+      allow update: if (isVerified() || isAdmin()) && (
+        (resource.data.doctorId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['status'])) ||
+        isAdmin()
+      );
     }
   }
 }
