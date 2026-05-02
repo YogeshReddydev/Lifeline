@@ -1,0 +1,65 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&family=Space+Mono:wght@400;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Space Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-background-custom: var(--background);
+  --color-card-custom: var(--card);
+  --color-text-custom: var(--text);
+  --color-border-custom: var(--border);
+  --color-muted-custom: var(--muted);
+  --color-natural-bg: var(--natural-bg);
+  --color-natural-text: var(--natural-text);
+  --color-sos: #fc8181;
+  --color-success: #68d391;
+  --color-warning: #f6ad55;
+}
+
+@layer base {
+  :root {
+    --primary: #2563eb;
+    --secondary: #7c3aed;
+    --accent: #eff6ff;
+    --background: #f8fafc;
+    --card: #ffffff;
+    --text: #1e293b;
+    --border: #e2e8f0;
+    --muted: #64748b;
+    --natural-bg: #f8fafc;
+    --natural-text: #0f172a;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --sos: #ef4444;
+  }
+
+  :root.dark {
+    --primary: #63b3ed;
+    --secondary: #b794f4;
+    --accent: #1e293b;
+    --background: #0a0e1a;
+    --card: #111827;
+    --text: #f8fafc;
+    --border: #334155;
+    --muted: #94a3b8;
+    --natural-bg: #0a0e1a;
+    --natural-text: #f8fafc;
+  }
+
+  body {
+    @apply font-sans bg-background-custom text-text-custom transition-colors duration-300;
+  }
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+

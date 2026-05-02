@@ -1,0 +1,123 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // -------------------------------------------------------------------------
+    // Phase 3: Primitive Definitions
+    // -------------------------------------------------------------------------
+    function isSignedIn() { return request.auth != null; }
+    function isEmailVerified() { return request.auth.token.email_verified == true; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isAdmin() { return isSignedIn() && request.auth.token.email == 'yampaatiyogeshpavan@gmail.com'; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    // -------------------------------------------------------------------------
+    // Validation Helpers
+    // -------------------------------------------------------------------------
+    
+    function isValidUser(data) {
+      return data.keys().hasAll(['email', 'name', 'role', 'createdAt']) &&
+             data.email is string && data.email.size() <= 200 &&
+             data.name is string && data.name.size() <= 200 &&
+             data.role in ['patient', 'doctor', 'admin', 'guardian'] &&
+             (data.createdAt is string || data.createdAt is timestamp);
+    }
+
+    function isValidSymptomsAnalysis(data) {
+      return data.keys().hasAll(['userId', 'timestamp']) &&
+             data.userId == request.auth.uid &&
+             data.userId is string &&
+             (data.timestamp is timestamp || data.timestamp is string);
+    }
+
+    function isValidSkinAnalysis(data) {
+      return data.keys().hasAll(['userId', 'timestamp', 'imageUrl', 'analysis']) &&
+             data.userId == request.auth.uid &&
+             data.imageUrl is string &&
+             data.imageUrl.size() <= 1000 &&
+             data.analysis is map;
+    }
+
+    function isValidMedicineAnalysis(data) {
+      return data.keys().hasAll(['userId', 'medicineName', 'analysis', 'timestamp']) &&
+             data.userId == request.auth.uid &&
+             data.medicineName is string &&
+             data.medicineName.size() <= 500 &&
+             data.analysis is map;
+    }
+
+    function isValidConsultation(data) {
+      return data.keys().hasAll(['patientId', 'doctorId', 'status', 'timestamp']) &&
+             data.patientId is string &&
+             data.doctorId is string &&
+             data.status in ['requested', 'active', 'completed'];
+    }
+
+    // -------------------------------------------------------------------------
+    // 0. Global Safety Net
+    // -------------------------------------------------------------------------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 1. User Profiles
+    match /users/{userId} {
+      allow get: if isSignedIn() && (isOwner(userId) || isAdmin() || resource.data.role == 'doctor');
+      allow list: if isSignedIn() && (
+        resource.data.role == 'doctor' || 
+        (isOwner(userId)) ||
+        isAdmin()
+      );
+      
+      allow create: if isSignedIn() && isOwner(userId) && isValidUser(incoming()) && (
+        incoming().role != 'admin' || incoming().email == 'yampaatiyogeshpavan@gmail.com'
+      );
+      
+      allow update: if isSignedIn() && isOwner(userId) && isValidUser(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'name', 'specialization', 'qualification', 'hospital', 'experience', 
+          'licenseNumber', 'isAvailable', 'readyForTreatment', 'lastCheckupCondition', 
+          'guardianCode', 'linkedPatients', 'linkedGuardians'
+        ])
+      );
+    }
+
+    // 2. Consultations
+    match /consultations/{id} {
+      allow get: if isSignedIn() && (resource.data.patientId == request.auth.uid || resource.data.doctorId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.patientId == request.auth.uid || resource.data.doctorId == request.auth.uid || isAdmin());
+      
+      allow create: if isSignedIn() && isValidConsultation(incoming()) && incoming().patientId == request.auth.uid;
+      
+      allow update: if isSignedIn() && (resource.data.doctorId == request.auth.uid || isAdmin()) && (
+         incoming().diff(existing()).affectedKeys().hasOnly(['status', 'meetingUrl'])
+      );
+    }
+
+    // 3. Analyses
+    match /symptomsAnalyses/{id} {
+      allow get: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && isValidSymptomsAnalysis(incoming()) && incoming().userId == request.auth.uid;
+    }
+
+    match /skinAnalyses/{id} {
+      allow get: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && isValidSkinAnalysis(incoming()) && incoming().userId == request.auth.uid;
+    }
+
+    match /medicineAnalyses/{id} {
+      allow get: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && isValidMedicineAnalysis(incoming()) && incoming().userId == request.auth.uid;
+    }
+
+    match /healthReports/{id} {
+      allow get: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+    }
+  }
+}

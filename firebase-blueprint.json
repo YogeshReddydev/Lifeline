@@ -1,0 +1,110 @@
+{
+  "entities": {
+    "users": {
+      "title": "User Profile",
+      "description": "Stores user profile and account information.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["patient", "doctor", "admin", "guardian"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "specialization": { "type": "string" },
+        "qualification": { "type": "string" },
+        "hospital": { "type": "string" },
+        "experience": { "type": "string" },
+        "licenseNumber": { "type": "string" },
+        "isAvailable": { "type": "boolean" },
+        "readyForTreatment": { "type": "boolean" },
+        "lastCheckupCondition": { "type": "string" }
+      },
+      "required": ["email", "name", "role", "createdAt"]
+    },
+    "consultations": {
+      "title": "Consultation",
+      "description": "Records of doctor-patient consultations.",
+      "type": "object",
+      "properties": {
+        "patientId": { "type": "string" },
+        "doctorId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["requested", "active", "completed"] },
+        "meetingUrl": { "type": "string" }
+      },
+      "required": ["patientId", "doctorId", "status", "timestamp"]
+    },
+    "symptomsAnalyses": {
+      "title": "Symptom Analysis",
+      "description": "History of symptom-based health assessments.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "query": { "type": "string" },
+        "analysis": { "type": "object" },
+        "results": { "type": "array" }
+      },
+      "required": ["userId", "timestamp"]
+    },
+    "skinAnalyses": {
+      "title": "Skin Analysis",
+      "description": "Dermatological AI assessment history.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "analysis": { "type": "object" }
+      },
+      "required": ["userId", "timestamp"]
+    },
+    "healthReports": {
+      "title": "Health Report",
+      "description": "Comprehensive clinical health reports.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "data": { "type": "object" }
+      },
+      "required": ["userId", "timestamp"]
+    },
+    "medicineAnalyses": {
+      "title": "Medicine Analysis",
+      "description": "Records of AI-analyzed medicines.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "medicineName": { "type": "string" },
+        "analysis": { "type": "object" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "medicineName", "timestamp"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "users",
+      "description": "User profiles"
+    },
+    "symptomsAnalyses/{analysisId}": {
+      "schema": "symptomsAnalyses",
+      "description": "Symptom checker results"
+    },
+    "skinAnalyses/{analysisId}": {
+      "schema": "skinAnalyses",
+      "description": "Skin scan results"
+    },
+    "healthReports/{reportId}": {
+      "schema": "healthReports",
+      "description": "Generated health reports"
+    },
+    "medicineAnalyses/{analysisId}": {
+      "schema": "medicineAnalyses",
+      "description": "Medicine analysis results"
+    },
+    "consultations/{consultationId}": {
+      "schema": "consultations",
+      "description": "Consultation records"
+    }
+  }
+}
